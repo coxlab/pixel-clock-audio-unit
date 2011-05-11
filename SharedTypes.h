@@ -1,6 +1,6 @@
 /*
  *  SharedTypes.h
- *  SpikeAudioUnit
+ *  PixelClockAudioUnit
  *
  *  Created by David Cox on 6/16/10.
  *  Copyright 2010 Harvard University. All rights reserved.
@@ -19,87 +19,11 @@
 
 enum {
     kThresholdParam =0,
-    kMinAmplitudeViewParam = 1,
-    kMaxAmplitudeViewParam = 2,
-    kMinTimeViewParam = 3,
-    kMaxTimeViewParam = 4,
-    kChannelIDParam = 5,
-    kGainParam = 6,
-    kUnitsPerVoltParam = 7,
-    kAutoThresholdFactorParam = 8,
-    kAutoThresholdHighParam = 9,
-    kAutoThresholdLowParam = 10,
-    kNumberOfParameters=11
+    kChannelIDParam = 1,
+    kNumberOfParameters=2
     
 };
 
-enum
-{
-	kAudioUnitProperty_TriggeredSpikes = 65536,
-    //	kAudioUnitProperty_SampleTimeStamp = 65537,
-};
-
-
-class AUSpikeContainer {
-
-    
-public:
-    Float32 *buffer;
-    SInt64 timestamp;
-    
-    // constructor for building a fresh waveform buffer
-    AUSpikeContainer(){
-        buffer = new Float32[PRE_TRIGGER + POST_TRIGGER];
-    }
-    
-    // constructor for recycling an existing buffer
-    AUSpikeContainer(Float32* _buffer){
-        buffer = _buffer;
-    }
-    
-    
-    
-    // only call when the program is finished; otherwise, we'll
-    // recycle the buffer
-    void dispose(){
-        if(buffer != NULL){
-            delete [] buffer;
-            buffer = NULL;
-        }
-    }
-    
-    
-    bool operator==(const AUSpikeContainer& container){
-        return (buffer == container.buffer && timestamp == container.timestamp); 
-    }
-    
-//    AUSpikeContainer *deep_copy(){
-//        
-//        AUSpikeContainer *return_val = new AUSpikeContainer();
-//        memcpy(return_val->buffer, buffer, (PRE_TRIGGER + POST_TRIGGER)*sizeof(Float32));
-//        
-//        return return_val;
-//    }
-//    
-//    AUSpikeContainer *shallow_copy(){
-//        
-//        AUSpikeContainer *return_val = new AUSpikeContainer(buffer);        
-//        return return_val;
-//    }
-    
-
-    
-};
-
-
-
-struct TriggeredSpikes {
-    
-    int n_spikes;
-    AUSpikeContainer **spike_containers;
-    
-};
-typedef struct TriggeredSpikes TriggeredSpikes;
 
 #endif
 
