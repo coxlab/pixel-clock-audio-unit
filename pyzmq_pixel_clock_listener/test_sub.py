@@ -4,7 +4,7 @@ import zmq
 
 from pixel_clock_info_pb2 import PixelClockInfoBuffer
 
-ipcPath = "ipc:///tmp/pixel_clock_channels/0"
+ipcPath = "ipc:///tmp/pixel_clock/1"
 
 context = zmq.Context()
 
