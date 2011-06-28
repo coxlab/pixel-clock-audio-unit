@@ -73,12 +73,12 @@ using namespace std;
 #pragma mark ____PixelClockAudioUnit Parameters
 
 // parameters
-static const float kDefaultValue_ThresholdParam = 0.025;
+static const float kDefaultValue_ThresholdParam = 0.005;
 
 static CFStringRef kThresholdParamName = CFSTR("Trigger Threshold");
 static CFStringRef kChannelIDParamName = CFSTR("Channel ID");
 
-#define REFRACTORY_COUNT    400
+#define REFRACTORY_COUNT    100
 
 
 #pragma mark ____PixelClockAudioUnit
@@ -143,6 +143,10 @@ public:
                 autothresholding_count = 0;
                 autothresholding_armed = false;
                 n_autothreshold_samples = 0;
+                
+                state = 0;
+                max_sample = 0.;
+                min_sample = 0.;
                                                                   
                 //midi_endpoint = shared_ptr<MIDIEndpoint>(new MIDIEndpoint("midi_spikes", "default_port", "spike_source"));
                 
@@ -211,8 +215,13 @@ public:
             
         
             int n_triggers;
+        
+            int state;
             
             Float32 last_sample;
+        
+            Float32 max_sample;
+            Float32 min_sample;
             
             SInt64 frame_number;
             

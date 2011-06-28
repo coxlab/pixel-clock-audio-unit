@@ -104,7 +104,7 @@ OSStatus			PixelClockAudioUnit::GetParameterInfo(AudioUnitScope		inScope,
                 AUBase::FillInParameterName (outParameterInfo, kThresholdParamName, false);
                 outParameterInfo.unit = kAudioUnitParameterUnit_Generic;
                 outParameterInfo.minValue = 0.0;
-                outParameterInfo.maxValue = 0.3;
+                outParameterInfo.maxValue = 0.1;
                 outParameterInfo.defaultValue = kDefaultValue_ThresholdParam;
                 break;
             
@@ -259,28 +259,145 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
 		destP += inNumChannels;
         
         
+        /*
+             d = data[i]
+    if ref > 0:
+        ref -= 1
+        continue
+    if state == 0:
+        if d > threshold:
+            deltas.append([1,i])
+            state = 1
+        elif d < -threshold:
+            deltas.append([-1,i])
+            state = -1
+    elif state == 1:
+        if d < -threshold:
+            deltas.append([-1,i])
+            state = -1
+        elif d < threshold:
+            state = 0
+            ref = REFPERIOD
+    elif state == -1:
+        if d > threshold:
+            deltas.append([1,i])
+            state = 1
+        elif d > -threshold:
+            state = 0
+            ref = REFPERIOD
+         */
+        
+        if (inputSample > max_sample) {
+            max_sample = inputSample;
+        }
+        
+        if (inputSample < min_sample) {
+            min_sample = inputSample;
+        }
+        
         if(refractory_count){
             refractory_count--;
-        } else if( (last_sample > threshold && inputSample < threshold) || (last_sample < -threshold && inputSample > -threshold) ){
-            
-            int direction = 2 * (inputSample > threshold) - 1;
-            
-            // copy the spike wave into a protocol buffer object
-            PixelClockInfoBuffer pc_info;
-            pc_info.set_time_stamp( frame_number );
-            pc_info.set_channel_id( current_channel_id );
-            pc_info.set_direction( direction );
-            
-                    
-            string serialized;
-            pc_info.SerializeToString(&serialized);
-            zmq::message_t msg(serialized.length());
-            memcpy(msg.data(), serialized.c_str(), serialized.length());
-            bool rc = message_socket->send(msg);
-            
-            refractory_count = REFRACTORY_COUNT;
-            
-            std::cerr << "pip" << std::endl;
+            //std::cerr << current_channel_id << ":" << inputSample << std::endl;
+        //} else if( (last_sample > threshold && inputSample < threshold) || (last_sample < -threshold && inputSample > -threshold) ){
+        } else if (state == 0) {
+            if (inputSample > threshold) {
+                // emit event : dir = 1
+                std::cerr << current_channel_id << " : 1" << std::endl;
+                PixelClockInfoBuffer pc_info;
+                pc_info.set_time_stamp( frame_number );
+                pc_info.set_channel_id( current_channel_id );
+                pc_info.set_direction( 1 );
+                
+                
+                string serialized;
+                pc_info.SerializeToString(&serialized);
+                zmq::message_t msg(serialized.length());
+                memcpy(msg.data(), serialized.c_str(), serialized.length());
+                bool rc = message_socket->send(msg);
+                state = 1;
+            } else if (inputSample < -threshold) {
+                // emit event : dir = -1
+                std::cerr << current_channel_id << " : 0" << std::endl;
+                PixelClockInfoBuffer pc_info;
+                pc_info.set_time_stamp( frame_number );
+                pc_info.set_channel_id( current_channel_id );
+                pc_info.set_direction( 0 );
+                
+                
+                string serialized;
+                pc_info.SerializeToString(&serialized);
+                zmq::message_t msg(serialized.length());
+                memcpy(msg.data(), serialized.c_str(), serialized.length());
+                bool rc = message_socket->send(msg);
+                state = -1;
+            }
+        } else if (state == 1) {
+            if (inputSample < -threshold) {
+                // emit event : dir = -1
+                std::cerr << current_channel_id << " : 0 " << std::endl;
+                PixelClockInfoBuffer pc_info;
+                pc_info.set_time_stamp( frame_number );
+                pc_info.set_channel_id( current_channel_id );
+                pc_info.set_direction( 0 );
+                
+                
+                string serialized;
+                pc_info.SerializeToString(&serialized);
+                zmq::message_t msg(serialized.length());
+                memcpy(msg.data(), serialized.c_str(), serialized.length());
+                bool rc = message_socket->send(msg);
+                state = -1;
+            } else if (inputSample < threshold) {
+                state = 0;
+                std::cerr << current_channel_id << " : MAX : " << max_sample << " : MIN : " << min_sample << std::endl;
+                max_sample = 0.;
+                min_sample = 0.;
+                refractory_count = REFRACTORY_COUNT;
+            }
+        } else if (state == -1) {
+            if (inputSample > threshold) {
+                std::cerr << current_channel_id << " : 1 " << std::endl;
+                // emit event : dir = 1
+                PixelClockInfoBuffer pc_info;
+                pc_info.set_time_stamp( frame_number );
+                pc_info.set_channel_id( current_channel_id );
+                pc_info.set_direction( 1 );
+                
+                
+                string serialized;
+                pc_info.SerializeToString(&serialized);
+                zmq::message_t msg(serialized.length());
+                memcpy(msg.data(), serialized.c_str(), serialized.length());
+                bool rc = message_socket->send(msg);
+                state = 1;
+            } else if (inputSample > -threshold) {
+                state = 0;
+                std::cerr << current_channel_id << " : MIN : " << min_sample << " : MAX : " << max_sample << std::endl;
+                max_sample = 0.;
+                min_sample = 0.;
+                refractory_count = REFRACTORY_COUNT;
+            }
+
+            //if ( (last_sample <= threshold && inputSample > threshold) || (last_sample >= -threshold && inputSample < -threshold) ) {
+//            
+//            int direction = 2 * (inputSample > threshold) - 1;
+//            
+//            // copy the spike wave into a protocol buffer object
+//            PixelClockInfoBuffer pc_info;
+//            pc_info.set_time_stamp( frame_number );
+//            pc_info.set_channel_id( current_channel_id );
+//            pc_info.set_direction( direction );
+//            
+//                    
+//            string serialized;
+//            pc_info.SerializeToString(&serialized);
+//            zmq::message_t msg(serialized.length());
+//            memcpy(msg.data(), serialized.c_str(), serialized.length());
+//            bool rc = message_socket->send(msg);
+//            
+//            refractory_count = REFRACTORY_COUNT;
+//            
+//            std::cerr << "pip" << inputSample << std::endl;
             
         } 
         
