@@ -287,6 +287,7 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
             ref = REFPERIOD
          */
         
+        /*
         if (inputSample > max_sample) {
             max_sample = inputSample;
         }
@@ -294,6 +295,7 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
         if (inputSample < min_sample) {
             min_sample = inputSample;
         }
+        */
         
         if(refractory_count){
             refractory_count--;
@@ -302,7 +304,7 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
         } else if (state == 0) {
             if (inputSample > threshold) {
                 // emit event : dir = 1
-                std::cerr << current_channel_id << " : 1" << std::endl;
+                //std::cerr << current_channel_id << " : 1" << std::endl;
                 PixelClockInfoBuffer pc_info;
                 pc_info.set_time_stamp( frame_number );
                 pc_info.set_channel_id( current_channel_id );
@@ -317,7 +319,7 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
                 state = 1;
             } else if (inputSample < -threshold) {
                 // emit event : dir = -1
-                std::cerr << current_channel_id << " : 0" << std::endl;
+                //std::cerr << current_channel_id << " : 0" << std::endl;
                 PixelClockInfoBuffer pc_info;
                 pc_info.set_time_stamp( frame_number );
                 pc_info.set_channel_id( current_channel_id );
@@ -334,7 +336,7 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
         } else if (state == 1) {
             if (inputSample < -threshold) {
                 // emit event : dir = -1
-                std::cerr << current_channel_id << " : 0 " << std::endl;
+                //std::cerr << current_channel_id << " : 0 " << std::endl;
                 PixelClockInfoBuffer pc_info;
                 pc_info.set_time_stamp( frame_number );
                 pc_info.set_channel_id( current_channel_id );
@@ -349,14 +351,14 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
                 state = -1;
             } else if (inputSample < threshold) {
                 state = 0;
-                std::cerr << current_channel_id << " : MAX : " << max_sample << " : MIN : " << min_sample << std::endl;
-                max_sample = 0.;
-                min_sample = 0.;
+                //std::cerr << current_channel_id << " : MAX : " << max_sample << " : MIN : " << min_sample << std::endl;
+                //max_sample = 0.;
+                //min_sample = 0.;
                 refractory_count = REFRACTORY_COUNT;
             }
         } else if (state == -1) {
             if (inputSample > threshold) {
-                std::cerr << current_channel_id << " : 1 " << std::endl;
+                //std::cerr << current_channel_id << " : 1 " << std::endl;
                 // emit event : dir = 1
                 PixelClockInfoBuffer pc_info;
                 pc_info.set_time_stamp( frame_number );
@@ -372,9 +374,9 @@ void PixelClockAudioUnit::PixelClockAudioUnitKernel::Process(	const Float32 	*in
                 state = 1;
             } else if (inputSample > -threshold) {
                 state = 0;
-                std::cerr << current_channel_id << " : MIN : " << min_sample << " : MAX : " << max_sample << std::endl;
-                max_sample = 0.;
-                min_sample = 0.;
+                //std::cerr << current_channel_id << " : MIN : " << min_sample << " : MAX : " << max_sample << std::endl;
+                //max_sample = 0.;
+                //min_sample = 0.;
                 refractory_count = REFRACTORY_COUNT;
             }
 
